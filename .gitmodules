@@ -1,0 +1,3 @@
+[submodule "labdrivers"]
+	path = labdrivers
+	url = calum@onnes.ccis.ualberta.ca:c/labdrivers
