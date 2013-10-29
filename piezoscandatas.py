@@ -23,9 +23,11 @@ pars.add_argument("-u", "--upper", type=float, default=100., help="set upper vol
 pars.add_argument("-r", "--reverse", action='store_true', help="scan in reverse")
 pars.add_argument("-P", "--noplot", action='store_true', help="disable plotting at end of scan")
 pars.add_argument("-s", "--sa", action='store_true', help="tell SA to save at each volt")
+pars.add_argument("-W", "--nowavelength", default=False, action='store_true', help="don't use wavelength meter")
 pars.add_argument("-S", "--nosave", action='store_true', help="disable saving")
 pars.add_argument("-o", "--outfile", default="", help="save data to OUTFILE")
 pars.add_argument("--channel", default="Dev1/ai2", help="set nidaq channel to read")
+pars.add_argument("--laser", default="localhost", help="set lasernet address")
 
 
 args = pars.parse_args()
@@ -37,7 +39,7 @@ if not args.sa:
 
 # initialize drivers
 # lasernet client (through websockets)
-l = labdrivers.LaserClient()
+l = labdrivers.LaserClient(args.laser)
 # wl meter
 w = labdrivers.WlMeter()
 if not w.ok():
@@ -80,7 +82,7 @@ for i in range(len(pz)):
 
     s.save(1, i)
 
-    if pz[i] in wls:
+    if not args.nowavelength and pz[i] in wls:
         wlrs[i] = w.wl()
     else:
         wlrs[i] = 0
