@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 from numpy import *
-from matplotlib.pyplot import *
 
 import labdrivers
 
@@ -19,70 +18,85 @@ pars.add_argument("start", type=float, help="start wavelength")
 pars.add_argument("stop", type=float, help="stop wavelength")
 pars.add_argument("step", type=float, help="takes data every step wavelength")
 
-pars.add_argument("-b", "--blocks", type=float, default=1.,
-    help="number of blocks to record with megadaq (default 1)")
+pars.add_argument("-l", "--laser", type=str, default="127.0.0.1",
+    help="location of scantech server")
+
+pars.add_argument("-c", "--channel", type=str, default="/dev1/ai0",
+    help="nidaqmx channel (default: /dev1/ai0)")
+
+pars.add_argument("-m", "--megadaq", type=str, default="",
+    help="megadaq location, unspecified means don't use it")
+pars.add_argument("-p", "--plot", action='store_true', default=False,
+    help="plot transmission after the scan")
 args = pars.parse_args()
 
 
 # initialize drivers
 # scantech client (through websockets)
-l = labdrivers.LaserClient(args.laser)
+l = labdrivers.ScantechClient(args.laser)
 
 # nidaq
 d = labdrivers.SimpleDaq(args.channel, 10000, 100, minv=0., maxv=10.)
 
-# wavelengths 
-pz = arange(args.start, args.stop, args.step)
+#
+# megadaqtyl.  really simple so implement right here.
+#
+if len(args.megadaq) > 0:
+    import zmq
+    
+    context = zmq.Context()
+    s = context.socket(zmq.REQ)
+    print("connecting to megadaq at %s" % args.megadaq)
+    s.connect("tcp://%s:6497" % args.megadaq)
+    print("connected.")
+    
+    def acquire(desc):
+        s.send("acquire;%s" % desc)
+        s.recv()
+else:
+    def acquire(d):
+        pass
+# end magadaq driver
 
-l.set_wave(pz[0])
-sleep(.5)
+
+# wavelengths.  santec laser has set prcision of 1 pm.
+waves = arange(args.start, args.stop, args.step).round(decimals=3)
+
+l.set_wave(waves[0])
+sleep(.1)
 
 avgs = zeros_like(pz)
 stds = zeros_like(pz)
-wlrs = zeros_like(pz)
-
-print("scanning..." )
-
-# loop through volts and measure at each one
-for i in range(len(pz)):
-    l.set_volt(pz[i])
-    sleep(.05)
-    
-    trans = d.read()
-    avgs[i] = mean(trans)
-    stds[i] = std(trans)
-
-    s.save(1, i)
-
-    if not args.nowavelength and pz[i] in wls:
-        wlrs[i] = w.wl()
-    else:
-        wlrs[i] = 0
-s.endsave()
-
 
 # save data
-if not args.nosave:
-    if len(args.outfile) > 0:
-        fname = args.outfile
-    else:
-        fname = datetime.now().strftime("%y.%m.%d_%H%M%S") + "_pzscan.txt"
-    print("saving to %s..." % fname)
+fname = datetime.now().strftime("%y.%m.%d_%H%M%S") + "_megascan.txt"
+f = open(fname, "w")
 
-    with open(fname, "w") as f:
-        for i in range(len(pz)):
-            if wlrs[i] != 0:
-                f.write("%d\t%e\t%e\t%e\t%e\n" % (i, pz[i], avgs[i], stds[i], wlrs[i]))
-            else:
-                f.write("%d\t%e\t%e\t%e\tInf\n" % (i, pz[i], avgs[i], stds[i]))
-                
+print("saving to %s..." % fname)
+
+# save transmission so can plot later
+trans = zeros_like(waves)
+# use enough padding 0s
+fmt = "%0" + str(len(waves) / 10 + 1) + "d"
+# loop through wavelengths and measure at each one
+for i, w in enumerate(waves):
+    l.set_wave(wave)
+    sleep(.05)
+    
+    trans1 = d.read()
+    acquire(fmt % i)
+    trans2 = d.read()
+    tran = concatenate((trans1, trans2))
+    trans[i] = mean(trans)
+    f.write("%d\t%.3f\t%e\t%e\t" % (i, w, trans[i], std(tran)))
 
 # plot results
-if not args.noplot:
+if args.plot:
     print("plotting...")
+    from matplotlib.pyplot import *
     figure()
-    plot(pz, avgs)
-    xlabel("piezo %")
-    ylabel("transmission (V)")
+    plot(waves, trans)
+    xlabel("Wavelength (nm)")
+    ylabel("Transmission (V)")
     show(block=True)
 
