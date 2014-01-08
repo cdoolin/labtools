@@ -2,12 +2,18 @@ from libnidaqmx import AnalogInputTask
 #import numpy as np
 
 class SimpleReader(object):
-    def __init__(self, channel, rate, n, minv=-.1, maxv=3.):
+    def __init__(self, channels, rate, n,maxv=3.):
         self.n = n
         
         self.task = AnalogInputTask()
-        self.task.create_voltage_channel(
-            channel, terminal = 'diff', min_val=minv, max_val=maxv)
+
+        if isinstance(channels, str):
+            channels = [channels]
+        for c in channels:
+            self.task.create_voltage_channel(
+                channel, terminal = 'diff',
+                min_val=-maxv, max_val=maxv)
+
         self.task.configure_timing_sample_clock(
             rate=rate, sample_mode='finite', samples_per_channel=n)
 
