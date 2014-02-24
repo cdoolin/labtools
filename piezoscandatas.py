@@ -58,7 +58,8 @@ if not args.reverse:
     pz = pz[::-1]
 
 # volts to take wlmeter readings at
-wls = arange(11)*10. # every 10 V
+#wls = arange(11)*10. # every 10 V
+wls = pz[::len(pz)/10]
 
 # set volt to initial setpoint
 #l.set_volt(pz[0])
@@ -76,9 +77,8 @@ for i in range(len(pz)):
     l.set_volt(pz[i])
     sleep(.05)
     
-    trans = d.read()
-    avgs[i] = mean(trans)
-    stds[i] = std(trans)
+    trans1 = d.read()
+    trans2 = d.read()
 
     s.save(1, i)
 
@@ -86,6 +86,9 @@ for i in range(len(pz)):
         wlrs[i] = w.wl()
     else:
         wlrs[i] = 0
+
+    avgs[i] = mean(r_[trans1, trans2])
+    stds[i] = std(r_[trans1, trans2])
 s.endsave()
 
 
