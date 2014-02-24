@@ -2,7 +2,6 @@
 from numpy import *
 from matplotlib.pyplot import *
 
-import daq
 import labdrivers
 
 from time import sleep
@@ -45,7 +44,7 @@ w = labdrivers.WlMeter()
 if not w.ok():
     print("couldn't connect to wavelength meter")
 # nidaq
-d = daq.SimpleReader(args.channel, 10000, 100, minv=0., maxv=10.)
+d = labdrivers.SimpleDaq(args.channel, 10000, 100, minv=0., maxv=10.)
 # SA
 s = labdrivers.SA()
 if not w.ok():
