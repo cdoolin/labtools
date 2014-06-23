@@ -4,4 +4,5 @@
 *.txt
 *.rar
 *.zip
+*.npy
 .DS_Store

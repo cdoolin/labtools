@@ -29,8 +29,8 @@ pars.add_argument("-l", "--laser", type=str, default="127.0.0.1",
     help="location of scantech server (default: localhost)")
 pars.add_argument("-c", "--channel", type=str, default="/dev1/ai0",
     help="nidaqmx channel, when using bash on windows escape first / with // (default: /dev1/ai0)")
-pars.add_argument("-p", "--port", type=int, default=5,
-    help="com port of attocube (default: 5)")
+pars.add_argument("-p", "--port", type=str, default="COM6",
+    help="com port of attocube (default: COM6)")
 
 
 pars.add_argument("-v", "--volt", type=float, default=10., help="volt range for NI DAQ (default: 10 V)")
@@ -58,31 +58,28 @@ fts = arange(args.ft_start, args.ft_stop, args.ft_step).round(decimals=2)
 # offets
 offs = arange(args.off_start, args.off_stop, args.off_step)
 
-l.set_fine(fts[0])
-sleep(.1)
 
 avgs = zeros((len(offs), len(fts)))
 stds = zeros_like(avgs)
 
 print("scanning... (control-c to stop)")
-try:
-    for i, offset in enumerate(offs):
-        print("%f V" % offset)
-        l.set_fine(fts[0])
-        atto.set_offset(args.axis, offset)
-        sleep(.1)
 
-        for j, ft in enumerate(fts):
-            l.set_fine(ft)
-            sleep(.01)
+for i, offset in enumerate(offs):
+	print("%f V" % offset)
+	laser.set_fine(fts[0])
+	atto.set_offset(args.axis, offset)
+	sleep(.1)
 
-            trans = daq.read()
+	for j, ft in enumerate(fts):
+		laser.set_fine(ft)
+		sleep(.01)
 
-            avgs[i, j] = mean(trans)
-            stds[i, j] = std(trans)
-    print("finished")
-except KeyboardInterrupt:
-    print("interrupted")
+		trans = daq.read()
+
+		avgs[i, j] = mean(trans)
+		stds[i, j] = std(trans)
+print("finished")
+
 
 timestamp = datetime.now().strftime("%y.%m.%d_%H%M%S_") + args.fname
 print("saving to %s" % timestamp)
