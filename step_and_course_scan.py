@@ -35,31 +35,63 @@ args = pars.parse_args()
 
 # initialize drivers
 from labdrivers.websocks import LaserClient
-laser = LaserClient(server=args.laser)
+laser = LaserClient(server=args.server)
 
 # attocube
 from labdrivers.attocube import Attocube
 atto = Attocube(port=args.port)
 
+
+def stepto(a, b, d):
+    d = abs(d) if b > a else -abs(d)
+    yield a
+    while abs(b - a) > abs(d):
+        a += d
+        yield a
+    yield b
+
 # offets
-offs = arange(args.off_start, args.off_stop, args.off_step)
-if any(a - floor(a) > 0):
-    yn = raw_input("volt offsets truncated in filename. continue? [y/N]")
-    if yn != "y":
-        import sys
-        sys.exit(0)
+#offs = arange(args.off_start, args.off_stop, args.off_step)
+#if any(offs - floor(offs) > 0):
+#    yn = raw_input("volt offsets truncated in filename. continue? [y/N]")
+#    if yn != "y":
+#        import sys
+#        sys.exit(0)
 
 # calculate number of digits to use when saving
-digits = ceil(log10(max(abs(offs)) + .001))
+#digits = ceil(log10(max(abs(offs)) + .001))
+
+#from  math import log10, floor, ceil
+#decimals = -floor(log10(args.off_step))
+digits = ceil(log10(max(abs(args.off_start), abs(args.off_stop)) +.001))
+#if decimals <= 0:
+#    fmtstr = "%%0%d.0fV" % digits
+#else:
+#    fmtstr = "%%0%d.%dfV" % (decimals + digits + 1, decimals)
+#
+#try:
+#    decimals = len(str(args.off_step).split('.')[1])
+#except ValueError:
+#    decimals = 0
+
 
 print("scanning... (control-c to stop)")
 
-for i, offset in enumerate(offs):
-	print("%f V" % offset)
-	#laser.set_fine(fts[0])
-	atto.set_offset(args.axis, offset)
-	sleep(.1)
-    laser.scan(args.wl_start, args._wl_stop, args._wl_slew, save="%%0%d.0f" % digits % offset)
-	
+for offset in stepto(args.off_start, args.off_stop, args.off_step):
+    print("%g V" % offset)
+    #laser.set_fine(fts[0])
+    atto.slideto(args.axis, offset)
+    sleep(.1)
+
+    text = "%gV" % offset
+    try:
+        dec = text.index('.')
+    except ValueError:
+        dec = len(text) - 1
+    if dec < digits:
+        text = "0" * (digits - dec) + text
+
+    laser.scan(args.wl_start, args.wl_stop, args.wl_slew, save=text)
+    
 print("finished")
 
