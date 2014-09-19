@@ -20,12 +20,13 @@ pars.add_argument("--laser", default="localhost", help="set lasernet address")
 pars.add_argument("--daq", action='append', help="channel to take nidaq data")
 #pars.add_argument("-s", "--sa", default=None, help="specify SA server to save with")
 pars.add_argument("-w", "--wave", default=None, help="wavelength meter address")
-pars.add_argument("--waveskip", default=5, help="take wavelength readings every nth step (default: 5)")
+pars.add_argument("--waveskip", default=20, type=int, help="take wavelength readings every nth step (default: 5)")
 #pars.add_argument("-m", "--megadaq", default=None, help="megadaq address")
 
 #pars.add_argument("-P", "--noplot", action='store_true', help="disable plotting at end of scan")
 pars.add_argument("-s", "--save", action='store_true', help="enable saving")
-pars.add_argument("-p", "--plot", default="", help="plot results")
+pars.add_argument("-p", "--plot", default=False, action='store_true', help="plot results")
+pars.add_argument("--maxv", default=10., type=float, help="daq volt range")
 
 args = pars.parse_args()
 
@@ -70,7 +71,7 @@ if args.daq is not None:
         return [volts_mean, volts_std]
 
     for channel in args.daq:
-        daq = labdrivers.daq.SimpleDaq(channel, 5000, 100, maxv=10.)
+        daq = labdrivers.daq.SimpleDaq(channel, 5000, 100, maxv=args.maxv)
         data.s += make_read_daq(daq)
     
 
@@ -100,6 +101,9 @@ def stepto(a, b, d):
         yield a
     yield b
 
+
+laser.set_volt(args.start)
+sleep(.1)
 
 results = []
 for pz in stepto(args.start, args.stop, args.step):

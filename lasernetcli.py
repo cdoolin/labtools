@@ -16,8 +16,11 @@ args = pars.parse_args()
 import labdrivers.websocks
 laser = labdrivers.websocks.LaserClient(args.server)
 
-if args.wave:
+if args.piezo is not None:
+    laser.set_volt(args.piezo)
+    import time
+    time.sleep(.2)
+
+if args.wave is not None:
     laser.set_wave(args.wave)
 
-if args.piezo:
-    laser.set_volt(args.piezo)
