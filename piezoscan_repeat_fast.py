@@ -16,7 +16,7 @@ pars.add_argument("start", default=0.5, type=float, help="piezo start")
 pars.add_argument("stop", default=0.5, type=float, help="piezo stop")
 pars.add_argument("step", default=0.5, type=float, help="piezo step")
 
-pars.add_argument("-m", "--mode", required=True, type=float, help="course start wavelengths to scan from")
+pars.add_argument("-m", "--mode", type=float, help="course start wavelengths to scan from")
 
 pars.add_argument("--laser", default="localhost", help="set lasernet address")
 pars.add_argument("--daq", action='append', help="channel to take nidaq data")
@@ -69,7 +69,7 @@ if args.daq is not None:
         return [volts_mean, volts_std]
 
     for channel in args.daq:
-        daq = labdrivers.daq.SimpleDaq(channel, 5000, 100, maxv=args.maxv)
+        daq = labdrivers.daq.SimpleDaq(channel, 5000, 40, maxv=args.maxv)
         data.s += make_read_daq(daq)
     
 
@@ -98,23 +98,22 @@ def stepto(a, b, d):
 
 pzs = list(stepto(args.start, args.stop, args.step))
 
-
 import numpy
 
 def scan_and_save():
     laser.set_volt(args.start)
     sleep(.1)
-    # laser.set_wave(mode_wl)
 
     if wlm is not None:
         wl = wlm.wl()
 
-    results = numpy.empty_like((len(pzs), len(data.s)))
+    results = numpy.empty((len(pzs), len(data.s)))
     for i, pz in enumerate(pzs):
         results[i, :] = numpy.array([f(pz) for f in data.s])
 
-    fname = datetime.now().strftime("%y.%m.%d_%H%M%S") + "wl%s_pzscan.npy" % str(wl)
+    fname = datetime.now().strftime("%y.%m.%d_%H%M%S") + "_wl%s_pzscan.npy" % str(wl)
     numpy.save(fname, results)
+    print fname
 
 
 #
@@ -124,8 +123,28 @@ def scan_and_save():
 #import os
 import msvcrt
 
-while msvcrt.kbhit() < 1:
+laser.set_volt(0)
+sleep(.1)
+
+if args.mode is not None:
+    print("setting wavelength to %s nm" % args.mode)
+    laser.set_wave(args.mode)
+
+while True:
+    if msvcrt.kbhit() > 0:
+        c = msvcrt.getch()
+        if c == 'p':
+            print("paused..")
+            msvcrt.getch()
+            print("resumed")
+        elif c == 'a':
+            print('a pressed')
+        else:
+            break;
     scan_and_save()
+
+# while msvcrt.kbhit() < 1:
+#    scan_and_save()
 
 msvcrt.getch()
 
