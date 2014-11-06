@@ -22,6 +22,7 @@ pars.add_argument("--laser", default="localhost", help="set lasernet address")
 pars.add_argument("--daq", action='append', help="channel to take nidaq data")
 #pars.add_argument("-s", "--sa", default=None, help="specify SA server to save with")
 pars.add_argument("-w", "--wave", default=None, help="wavelength meter address")
+pars.add_argument("-e", "--waveevery", type=int, default=1, help="take wavelength reading every this many times (default: 1)")
 pars.add_argument("--maxv", default=10., type=float, help="daq volt range")
 
 args = pars.parse_args()
@@ -100,12 +101,14 @@ pzs = list(stepto(args.start, args.stop, args.step))
 
 import numpy
 
-def scan_and_save():
+def scan_and_save(getwl=True):
     laser.set_volt(args.start)
     sleep(.1)
 
-    if wlm is not None:
+    if getwl and wlm is not None:
         wl = wlm.wl()
+    else:
+        wl = 0.
 
     results = numpy.empty((len(pzs), len(data.s)))
     for i, pz in enumerate(pzs):
@@ -130,7 +133,10 @@ if args.mode is not None:
     print("setting wavelength to %s nm" % args.mode)
     laser.set_wave(args.mode)
 
+i = 0
+we = args.waveevery
 while True:
+    i += 1
     if msvcrt.kbhit() > 0:
         c = msvcrt.getch()
         if c == 'p':
@@ -139,10 +145,13 @@ while True:
             print("resumed")
         elif c == 'a':
             print('a pressed')
+        elif c == 'w':
+            print("forcing wavelength read")
+            i = we
         else:
             break;
-    scan_and_save()
-
+    scan_and_save(getwl=i % we is 0)
+    
 # while msvcrt.kbhit() < 1:
 #    scan_and_save()
 
