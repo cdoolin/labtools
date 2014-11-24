@@ -9,31 +9,41 @@ pars.add_argument("--laser", default="localhost", help="set lasernet address")
 pars.add_argument("--slew", type=float, default=5, help="slew rate (default 5 nm/s)")
 pars.add_argument("--start", type=float, default=765, help="start wavelength (default 765 nm)")
 pars.add_argument("--stop", type=float, default=781, help="stop wavelength (nm)")
-pars.add_argument("--text", type=str, default="repeat", help="text to add to filename (default 'repeat')")
+pars.add_argument("--text", type=str, default="scan", help="text to add to filename (default 'repeat')")
 args = pars.parse_args()
 
 import labdrivers.websocks
 laser = labdrivers.websocks.LaserClient(args.laser)
 
 import msvcrt
+import time
 
-GO = False
+SCAN = False
+GO = True
 
-print("Press 'G' to start scanning.  'S' to stop.")
+print("Press 'g' to start scanning. 's' to stop. 'q' to quit.")
 
-while True:
-    if msvcrt.kbhit() > 0:
+i = 0
+
+while GO:
+    while msvcrt.kbhit() > 0:
         c = msvcrt.getch()
+        if c is 'a':
+            print("pressed a")
         if c in ['g', 'G']:
-            GO = True
+            print("scanning...")
+            SCAN = True
         elif c in ['s', 'S']:
-            GO = False
+            print("stopped.")
+            SCAN = False
         elif c in ['q', 'Q']:
-            return
+            GO = SCAN = False
 
-    if GO:
-        laser.scan(args.start, args.stop
+    if SCAN:
+        print(i)
+        laser.scan(args.start, args.stop, args.slew, "%s%04d" % (args.text, i))
+        i += 1
     else:
-        time.sleep(.1)
+        time.sleep(.05)
     
-msvcrt.getch()
+#msvcrt.getch()
