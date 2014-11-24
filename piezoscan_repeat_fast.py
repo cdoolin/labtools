@@ -133,8 +133,8 @@ if args.mode is not None:
     print("setting wavelength to %s nm" % args.mode)
     laser.set_wave(args.mode)
 
-i = 0
 we = args.waveevery
+i = we - 1
 while True:
     i += 1
     if msvcrt.kbhit() > 0:
