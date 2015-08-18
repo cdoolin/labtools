@@ -26,8 +26,10 @@ pars.add_argument("-m", "--megadaq", action='store', help="specify megadaq serve
 pars.add_argument("-W", "--nowavelength", default=False, action='store_true', help="don't use wavelength meter")
 pars.add_argument("-S", "--nosave", action='store_true', help="disable saving")
 pars.add_argument("-o", "--outfile", default="", help="save data to OUTFILE")
+pars.add_argument("-v", "--maxv", type=float, action='store', default=10., help="set daq input voltage (default: 10)")
 pars.add_argument("--channel", default="Dev1/ai2", help="set nidaq channel to read")
 pars.add_argument("--laser", default="localhost", help="set lasernet address")
+
 
 args = pars.parse_args()
 
@@ -55,23 +57,38 @@ else:
 #
 # SA
 #
-if not args.sa:
-    # hackity hack hack
-    labdrivers.SA = labdrivers.SAMock
 
-s = labdrivers.SA()
-s.endsave()
+if args.sa:
+    import labdrivers.zmqq
+    s = labdrivers.zmqq.SA()
+    s.endsave()
+    def save_sa(i):
+        s.save(1, i)
+if not args.sa:
+    def save_sa(i):
+        pass
+
 # end sa 
 
 # otehr drivers
 # lasernet client (through websockets)
-l = labdrivers.LaserClient(args.laser)
+import labdrivers.websocks
+l = labdrivers.websocks.LaserClient(args.laser)
+
 # wl meter
-w = labdrivers.WlMeter()
-if not w.ok():
-    print("couldn't connect to wavelength meter")
+if args.nowavelength:
+    def get_wl():
+        return 0
+else:
+    w = labdrivers.WlMeter()
+    if not w.ok():
+        print("couldn't connect to wavelength meter")
+    def get_wl():
+        return w.wl()
+
 # nidaq
-d = labdrivers.SimpleDaq(args.channel, 10000, 100, minv=0., maxv=10.)
+import labdrivers.daq
+d = labdrivers.daq.SimpleDaq(channel=args.channel, rate=10000, n=100, maxv=args.maxv)
 # SA
 
 
@@ -110,19 +127,21 @@ for i in range(len(pz)):
     trans1 = d.read()
 
     #save sa and or megadaq
-    s.save(1, i)
+    save_sa(i)
     megasave(i)
 
-    if not args.nowavelength and pz[i] in wls:
-        wlrs[i] = w.wl()
+    if pz[i] in wls:
+        wlrs[i] = get_wl()
     else:
         wlrs[i] = 0
+
 
     trans2 = d.read()
 
     avgs[i] = mean(r_[trans1, trans2])
     stds[i] = std(r_[trans1, trans2])
-s.endsave()
+if args.sa:
+    s.endsave()
 
 
 # save data
