@@ -24,10 +24,11 @@ pars.add_argument("-P", "--noplot", action='store_true', help="disable plotting 
 pars.add_argument("-s", "--sa", action='store', help="specify SA server to save with")
 pars.add_argument("-m", "--megadaq", action='store', help="specify megadaq server to save with")
 pars.add_argument("-W", "--nowavelength", default=False, action='store_true', help="don't use wavelength meter")
+
 pars.add_argument("-S", "--nosave", action='store_true', help="disable saving")
 pars.add_argument("-o", "--outfile", default="", help="save data to OUTFILE")
 pars.add_argument("-v", "--maxv", type=float, action='store', default=10., help="set daq input voltage (default: 10)")
-pars.add_argument("--channel", default="Dev1/ai2", help="set nidaq channel to read")
+pars.add_argument("--channel", default="Dev1/ai0", help="set nidaq channel to read")
 pars.add_argument("--laser", default="localhost", help="set lasernet address")
 
 
@@ -38,16 +39,19 @@ args = pars.parse_args()
 # megadaq driver
 #
 if args.megadaq is not None:
-    print("saving megadata at %s" % args.megadaqtyl)
+    print("saving megadata at %s" % args.megadaq)
     import zmq
     
     context = zmq.Context()
     s = context.socket(zmq.REQ)
-    s.connect("tcp://%s:6497" % args.megadaq)
-    
+    server = "tcp://%s:6497" % args.megadaq
+    s.connect(server)
+    print("connected to %s" % server)
     def megasave(desc):
+        print "sending save command"
         s.send("acquire;%s" % desc)
         s.recv()
+        print("save ok")
 else:
     def megasave(d):
         pass
@@ -80,15 +84,15 @@ if args.nowavelength:
     def get_wl():
         return 0
 else:
-    w = labdrivers.WlMeter()
-    if not w.ok():
-        print("couldn't connect to wavelength meter")
+    import labdrivers.rvisa
+    w = labdrivers.rvisa.WlMeter("GPIB0::4")
+
     def get_wl():
         return w.wl()
 
 # nidaq
 import labdrivers.daq
-d = labdrivers.daq.SimpleDaq(channel=args.channel, rate=10000, n=100, maxv=args.maxv)
+d = labdrivers.daq.SimpleDaq(channel=args.channel, rate=20000, n=400, maxv=args.maxv)
 # SA
 
 
@@ -164,7 +168,8 @@ if not args.nosave:
 if not args.noplot:
     print("plotting...")
     figure()
-    plot(pz, avgs)
+    plot(pz, avgs, 'ko')
+    plot(pz, avgs, 'k--')
     xlabel("piezo %")
     ylabel("transmission (V)")
     show(block=True)
