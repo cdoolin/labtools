@@ -6,3 +6,5 @@
 *.zip
 *.npy
 .DS_Store
+temp/*
+notebooks/.ipynb_checkpoints/*
