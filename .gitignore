@@ -8,3 +8,4 @@
 .DS_Store
 temp/*
 notebooks/.ipynb_checkpoints/*
+.vscode/*

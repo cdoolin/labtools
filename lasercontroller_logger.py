@@ -4,16 +4,26 @@ import datetime
 import time
 import msvcrt
 
+import argparse
+
+parser = argparse.ArgumentParser(description='Measure rtd resistance with laser-controller board.')
+parser.add_argument("--port", type=str, default="COM5",
+                    help='serial port to use (default: COM5')
+parser.add_argument('--rtd', type=int, default=1,
+                    help='which RTD to measure (default: 1)')
+
+args = parser.parse_args()
+
 
 RREF = 2000 # kOhms
 
-ser = serial.Serial('COM5', 9600, timeout=1)
+ser = serial.Serial(args.port, 9600, timeout=1)
 
 ser.write(b"echo 0\r\n")
 ser.readline()
 
 def get_resistance():
-    ser.write(b"get_rtd 1\r\n")
+    ser.write(b"get_rtd %d\r\n" % args.rtd)
     return float(ser.readline().decode().strip()) / 1000.
 
 def get_dt():
