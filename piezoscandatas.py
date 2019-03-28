@@ -48,7 +48,7 @@ if args.megadaq is not None:
     s.connect(server)
     print("connected to %s" % server)
     def megasave(desc):
-        print "sending save command"
+        print("sending save command")
         s.send("acquire;%s" % desc)
         s.recv()
         print("save ok")
@@ -92,7 +92,7 @@ else:
 
 # nidaq
 import labdrivers.daq
-d = labdrivers.daq.SimpleDaq(channel=args.channel, rate=20000, n=400, maxv=args.maxv)
+d = labdrivers.daq.SimpleDaq(channel=args.channel, rate=5000, n=500, maxv=args.maxv)
 # SA
 
 
@@ -159,9 +159,9 @@ if not args.nosave:
     with open(fname, "w") as f:
         for i in range(len(pz)):
             if wlrs[i] != 0:
-                f.write("%d\t%e\t%e\t%e\t%e\n" % (i, pz[i], avgs[i], stds[i], wlrs[i]))
+                f.write("%d\t%g\t%e\t%e\t%e\n" % (i, pz[i], avgs[i], stds[i], wlrs[i]))
             else:
-                f.write("%d\t%e\t%e\t%e\tInf\n" % (i, pz[i], avgs[i], stds[i]))
+                f.write("%d\t%g\t%e\t%e\tInf\n" % (i, pz[i], avgs[i], stds[i]))
                 
 
 # plot results
