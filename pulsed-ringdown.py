@@ -45,6 +45,9 @@ pars.add_argument("--channel-trig", type=str, default="dev2/ao1",
 pars.add_argument("--drive-rate", type=float, default=800e3,
     help="samplerate to generate control signal at (default: 800e3)")
 
+pars.add_argument("--loops", type=int, default=1,
+    help="number of times to collect ringdowns (default: 1)")
+
 
 args = pars.parse_args()
 
@@ -147,7 +150,7 @@ import tqdm
 
 ridev = ripy.Device()
 
-def capture_pulses(npulses, ncaps=100, Tcap=Tpretrig + Tmeas, dev=ridev):
+def capture_pulses(npulses, ncaps=10, Tcap=Tpretrig + Tmeas, dev=ridev):
     """
     breaks capture into multiple get_raw_data calls to 
     enable reporting of capture status with tqdm
@@ -177,34 +180,35 @@ def capture_pulses(npulses, ncaps=100, Tcap=Tpretrig + Tmeas, dev=ridev):
 
 # if __name__ == '__main__':
 
-for ringdown in ringdowns:
-    print(f"ringdown {ringdown}")
+for j in range(args.loops):
+    for ringdown in ringdowns:
+        print(f"{j}: ringdown {ringdown}")
 
-    wave_aom, wave_trig = generate_control_sig(ringdown)
-    # assert len(wave_aom) == Noutsamps
-    # assert len(wave_trig) == Noutsamps
-    outtask.timing.cfg_samp_clk_timing(
-        rate=args.drive_rate, 
-        samps_per_chan=len(wave_aom),
-        sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS)
-    outtask.write([list(wave_aom), list(wave_trig)], timeout=10, auto_start=False)
+        wave_aom, wave_trig = generate_control_sig(ringdown)
+        # assert len(wave_aom) == Noutsamps
+        # assert len(wave_trig) == Noutsamps
+        outtask.timing.cfg_samp_clk_timing(
+            rate=args.drive_rate, 
+            samps_per_chan=len(wave_aom),
+            sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS)
+        outtask.write([list(wave_aom), list(wave_trig)], timeout=10, auto_start=False)
 
-    t0 = datetime.datetime.now()
+        t0 = datetime.datetime.now()
 
-    outtask.start()
-    if not args.test:
-        data = capture_pulses(args.npulses)
-    outtask.stop()
+        outtask.start()
+        if not args.test:
+            data = capture_pulses(args.npulses)
+        outtask.stop()
 
-    t1 = datetime.datetime.now()
-    dt = (t1 - t0).seconds
-    tstamp = t0.strftime("%y.%m.%d_%H%M%S")
+        t1 = datetime.datetime.now()
+        dt = (t1 - t0).seconds
+        tstamp = t0.strftime("%y.%m.%d_%H%M%S")
 
-    fname = f"{tstamp}_dt{dt}_npulses{args.npulses}_ringdown{'%e' % ringdown}.npy"
-    print(f"saving to {fname}")
+        fname = f"{tstamp}_dt{dt}_npulses{args.npulses}_ringdown{'%e' % ringdown}.npy"
+        print(f"saving to {fname}")
 
-    if not args.test:
-        numpy.save(fname, data)
+        if not args.test:
+            numpy.save(fname, data)
 
 
 outtask.__exit__(None, None, None)
