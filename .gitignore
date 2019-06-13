@@ -9,3 +9,4 @@
 temp/*
 notebooks/.ipynb_checkpoints/*
 .vscode/*
+fftw_py.wisdom
