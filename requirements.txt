@@ -1,0 +1,3 @@
+ri-python
+git+https://gitlab.com/megahurts/ripy-utils.git#egg=ripy-utils
+git+https://github.com/cdoolin/labdrivers.git#egg=labdrivers
