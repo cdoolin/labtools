@@ -120,8 +120,8 @@ for i, wl in enumerate(wls):
     # laser.chk_wave()
 
     # take ri data
+    fs, Z2 = spectrum.take_spectrum(ridev, args.navg, args.rbw, threads=4)
     if not args.nosave:
-        fs, Z2 = spectrum.take_spectrum(ridev, args.navg, args.rbw, threads=4)
         fname = fn(f"{tstamp}_scan{i:03}_navg{args.navg}_Z2")
         np.save(fname, Z2)
     
